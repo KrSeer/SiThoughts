@@ -1,0 +1,16 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const now = new Intl.DateTimeFormat('zh-CN', {
+  dateStyle: 'long',
+  timeZone: 'Asia/Shanghai',
+}).format(new Date());
+---
+
+<Layout title="Hello · SiThoughts">
+  <h1>Hello, world! 👋</h1>
+  <p>页面生成时间：{now}</p>
+  <p>
+    如果这行文字出现在线上，说明 Astro 的构建流程已经跑通。
+  </p>
+</Layout>

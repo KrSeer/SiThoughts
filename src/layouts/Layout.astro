@@ -1,0 +1,115 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'SiThoughts —— 日常记录与思考' } = Astro.props;
+const rawBase = import.meta.env.BASE_URL;
+const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href={base}>SiThoughts</a>
+      <nav>
+        <a href={`${base}hello/`}>Hello</a>
+      </nav>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <p>© {new Date().getFullYear()} SiThoughts · Powered by Astro &amp; GitHub Pages</p>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --fg: #1f2328;
+    --muted: #656d76;
+    --bg: #ffffff;
+    --accent: #0969da;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fg: #e6edf3;
+      --muted: #8b949e;
+      --bg: #0d1117;
+      --accent: #58a6ff;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+      'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    line-height: 1.7;
+  }
+
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 46rem;
+    width: 100%;
+    margin: 0 auto;
+    padding: 1.25rem 1.25rem 0;
+  }
+
+  .brand {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--fg);
+    text-decoration: none;
+  }
+
+  .site-header nav a {
+    color: var(--muted);
+    text-decoration: none;
+    margin-left: 1rem;
+  }
+
+  .site-header nav a:hover { color: var(--accent); }
+
+  main {
+    flex: 1;
+    width: 100%;
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 3rem 1.25rem;
+  }
+
+  a { color: var(--accent); }
+
+  .site-footer {
+    max-width: 46rem;
+    width: 100%;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 2.5rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+    border-top: 1px solid color-mix(in srgb, var(--muted) 25%, transparent);
+  }
+</style>
