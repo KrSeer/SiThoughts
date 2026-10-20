@@ -213,55 +213,6 @@ import Layout from '../layouts/Layout.astro';
     margin: 1rem 0 1.25rem;
   }
 
-  .empty {
-    color: var(--muted);
-    font-size: 0.9rem;
-    text-align: center;
-    padding: 2rem 1rem;
-    border: 1px dashed color-mix(in srgb, var(--muted) 35%, transparent);
-    border-radius: 12px;
-  }
-
-  .msg {
-    max-width: 85%;
-    padding: 0.7rem 0.9rem;
-    border-radius: 12px;
-    font-size: 0.95rem;
-    line-height: 1.65;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
-
-  .msg.user {
-    justify-self: end;
-    background: var(--accent);
-    color: #fff;
-    border-bottom-right-radius: 4px;
-  }
-
-  .msg.assistant {
-    justify-self: start;
-    background: color-mix(in srgb, var(--bg) 88%, var(--fg) 12%);
-    border: 1px solid color-mix(in srgb, var(--muted) 22%, transparent);
-    border-bottom-left-radius: 4px;
-  }
-
-  .msg.error {
-    justify-self: start;
-    border: 1px solid #cf222e;
-    color: #cf222e;
-    background: transparent;
-  }
-
-  .msg.assistant.streaming::after {
-    content: '▍';
-    animation: blink 1s steps(2, start) infinite;
-  }
-
-  @keyframes blink {
-    to { visibility: hidden; }
-  }
-
   .composer {
     display: grid;
     gap: 0.6rem;
@@ -281,8 +232,67 @@ import Layout from '../layouts/Layout.astro';
     .field.inline {
       grid-template-columns: 1fr;
     }
+  }
+</style>
 
-    .msg {
+<!--
+  动态创建的消息节点没有 Astro 的 scope 属性，所以气泡样式必须是全局的。
+  用 .messages 前缀限定作用范围，避免污染其他页面。
+-->
+<style is:global>
+  .messages .empty {
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 2rem 1rem;
+    border: 1px dashed color-mix(in srgb, var(--muted) 35%, transparent);
+    border-radius: 12px;
+  }
+
+  .messages .msg {
+    max-width: 85%;
+    padding: 0.7rem 0.9rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .messages .msg.user {
+    justify-self: end;
+    background: var(--accent);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+
+  .messages .msg.assistant {
+    justify-self: start;
+    background: color-mix(in srgb, var(--bg) 88%, var(--fg) 12%);
+    border: 1px solid color-mix(in srgb, var(--muted) 22%, transparent);
+    border-bottom-left-radius: 4px;
+  }
+
+  .messages .msg.error {
+    justify-self: start;
+    border: 1px solid #cf222e;
+    color: #cf222e;
+    background: transparent;
+  }
+
+  .messages .msg.assistant.streaming::after {
+    content: '▍';
+    animation: chat-blink 1s steps(2, start) infinite;
+  }
+
+  @keyframes chat-blink {
+    to {
+      visibility: hidden;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .messages .msg {
       max-width: 100%;
     }
   }
