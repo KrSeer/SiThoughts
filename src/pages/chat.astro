@@ -1,0 +1,554 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="AI Chat · SiThoughts">
+  <Fragment slot="head">
+    {
+      import.meta.env.PROD && (
+        <meta
+          http-equiv="Content-Security-Policy"
+          content="default-src 'self'; script-src 'self'; connect-src 'self' https://api.deepseek.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'"
+        />
+      )
+    }
+  </Fragment>
+
+  <h1>AI Chat</h1>
+  <p class="lead">
+    纯前端对话 demo：浏览器直连 <strong>DeepSeek</strong>，API key 只保存在你自己的浏览器里，
+    不经过本站服务器、也不会出现在页面源码或日志中。
+  </p>
+
+  <section class="panel" id="setup">
+    <div class="field">
+      <label for="apiKey">DeepSeek API Key</label>
+      <div class="key-row">
+        <input
+          id="apiKey"
+          type="password"
+          placeholder="sk-..."
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button type="button" id="toggleKey" class="ghost" title="显示/隐藏">显示</button>
+      </div>
+      <p class="hint">
+        还没有 key？到 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer">platform.deepseek.com</a> 创建一个。
+        建议单独建一个低额度 key，不要用主力 key。
+      </p>
+    </div>
+
+    <div class="field inline">
+      <label for="model">模型</label>
+      <select id="model">
+        <option value="deepseek-chat">deepseek-chat</option>
+        <option value="deepseek-reasoner">deepseek-reasoner</option>
+      </select>
+
+      <label class="check">
+        <input type="checkbox" id="rememberKey" />
+        <span>记住 key（写入 localStorage）</span>
+      </label>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="saveKey" class="primary">保存并开始</button>
+      <button type="button" id="clearKey" class="ghost">清除本地 key</button>
+      <span id="status" class="status" role="status"></span>
+    </div>
+  </section>
+
+  <section class="chat" aria-label="对话">
+    <div id="messages" class="messages">
+      <p class="empty" id="emptyHint">还没有消息。先保存 key，然后随便问一句试试。</p>
+    </div>
+
+    <form id="chatForm" class="composer">
+      <textarea
+        id="chatInput"
+        rows="3"
+        placeholder="说点什么…（Enter 发送，Shift+Enter 换行）"
+        maxlength="4000"
+      ></textarea>
+      <div class="composer-actions">
+        <button type="submit" id="sendBtn" class="primary">发送</button>
+        <button type="button" id="stopBtn" class="ghost" hidden>停止</button>
+        <button type="button" id="clearChat" class="ghost">清空对话</button>
+      </div>
+    </form>
+
+    <p class="fineprint">
+      请求由你的浏览器直接发往 <code>api.deepseek.com</code>。请在可信网络和设备上使用，
+      公共电脑上用完记得点“清除本地 key”。
+    </p>
+  </section>
+</Layout>
+
+<style>
+  .lead {
+    color: var(--muted);
+    margin-top: -0.5rem;
+  }
+
+  .panel {
+    border: 1px solid color-mix(in srgb, var(--muted) 30%, transparent);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .field {
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .field.inline {
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  label {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .key-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  input[type='password'],
+  input[type='text'],
+  select,
+  textarea {
+    width: 100%;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--bg) 92%, var(--fg) 8%);
+    color: var(--fg);
+    font: inherit;
+    font-size: 0.95rem;
+  }
+
+  select {
+    width: auto;
+    min-width: 12rem;
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 4.5rem;
+  }
+
+  button {
+    font: inherit;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+
+  button.primary {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  button.primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  button.ghost {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--muted) 40%, transparent);
+    color: var(--fg);
+  }
+
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .check input {
+    width: auto;
+  }
+
+  .hint,
+  .fineprint {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .status {
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+
+  .status.ok { color: #1a7f37; }
+  .status.warn { color: #9a6700; }
+  .status.err { color: #cf222e; }
+
+  .messages {
+    display: grid;
+    gap: 0.9rem;
+    margin: 1rem 0 1.25rem;
+  }
+
+  .empty {
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 2rem 1rem;
+    border: 1px dashed color-mix(in srgb, var(--muted) 35%, transparent);
+    border-radius: 12px;
+  }
+
+  .msg {
+    max-width: 85%;
+    padding: 0.7rem 0.9rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .msg.user {
+    justify-self: end;
+    background: var(--accent);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg.assistant {
+    justify-self: start;
+    background: color-mix(in srgb, var(--bg) 88%, var(--fg) 12%);
+    border: 1px solid color-mix(in srgb, var(--muted) 22%, transparent);
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg.error {
+    justify-self: start;
+    border: 1px solid #cf222e;
+    color: #cf222e;
+    background: transparent;
+  }
+
+  .msg.assistant.streaming::after {
+    content: '▍';
+    animation: blink 1s steps(2, start) infinite;
+  }
+
+  @keyframes blink {
+    to { visibility: hidden; }
+  }
+
+  .composer {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .composer-actions {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .fineprint {
+    margin-top: 0.9rem;
+  }
+
+  @media (max-width: 640px) {
+    .field.inline {
+      grid-template-columns: 1fr;
+    }
+
+    .msg {
+      max-width: 100%;
+    }
+  }
+</style>
+
+<script>
+  const KEY_STORE = 'sithoughts.chat.key';
+  const REMEMBER_STORE = 'sithoughts.chat.remember';
+  const MODEL_STORE = 'sithoughts.chat.model';
+  const API_URL = 'https://api.deepseek.com/chat/completions';
+
+  const SYSTEM_PROMPT =
+    '你是 SiThoughts（一个个人博客）里的 AI 助手。回答尽量简洁、准确、直接；默认使用中文。' +
+    '你不知道用户的私人信息，也不要假装知道；不确定时就说不确定。';
+
+  const el = {
+    apiKey: document.getElementById('apiKey'),
+    toggleKey: document.getElementById('toggleKey'),
+    model: document.getElementById('model'),
+    remember: document.getElementById('rememberKey'),
+    saveKey: document.getElementById('saveKey'),
+    clearKey: document.getElementById('clearKey'),
+    status: document.getElementById('status'),
+    messages: document.getElementById('messages'),
+    emptyHint: document.getElementById('emptyHint'),
+    form: document.getElementById('chatForm'),
+    input: document.getElementById('chatInput'),
+    send: document.getElementById('sendBtn'),
+    stop: document.getElementById('stopBtn'),
+    clearChat: document.getElementById('clearChat'),
+  };
+
+  let history = [{ role: 'system', content: SYSTEM_PROMPT }];
+  let controller = null;
+
+  function setStatus(text, kind = '') {
+    el.status.textContent = text;
+    el.status.className = 'status' + (kind ? ` ${kind}` : '');
+  }
+
+  function readKey() {
+    return sessionStorage.getItem(KEY_STORE) || localStorage.getItem(KEY_STORE) || '';
+  }
+
+  function persistKey(key) {
+    const remember = el.remember.checked;
+    localStorage.setItem(REMEMBER_STORE, remember ? '1' : '0');
+    if (remember) {
+      localStorage.setItem(KEY_STORE, key);
+      sessionStorage.removeItem(KEY_STORE);
+    } else {
+      sessionStorage.setItem(KEY_STORE, key);
+      localStorage.removeItem(KEY_STORE);
+    }
+  }
+
+  function forgetKey() {
+    localStorage.removeItem(KEY_STORE);
+    sessionStorage.removeItem(KEY_STORE);
+    el.apiKey.value = '';
+    setStatus('已清除本地 key', 'ok');
+  }
+
+  function addMessage(role, text, extraClass = '') {
+    if (el.emptyHint) {
+      el.emptyHint.remove();
+      el.emptyHint = null;
+    }
+    const node = document.createElement('div');
+    node.className = `msg ${role}${extraClass ? ` ${extraClass}` : ''}`;
+    node.textContent = text;
+    el.messages.appendChild(node);
+    scrollToBottom();
+    return node;
+  }
+
+  function scrollToBottom() {
+    el.messages.scrollIntoView({ block: 'end', behavior: 'smooth' });
+  }
+
+  function setStreaming(on) {
+    el.send.disabled = on;
+    el.stop.hidden = !on;
+    if (on) setStatus('正在生成…', '');
+  }
+
+  class ApiError extends Error {
+    constructor(status, body) {
+      super(`HTTP ${status}`);
+      this.status = status;
+      this.body = body;
+    }
+  }
+
+  function describeError(err) {
+    if (err.name === 'AbortError') return '已停止生成。';
+    if (err instanceof ApiError) {
+      if (err.status === 401) return 'API key 无效或已失效（401）。请检查后重新保存。';
+      if (err.status === 402) return '账户余额不足（402）。请到 DeepSeek 控制台充值。';
+      if (err.status === 429) return '请求过于频繁或额度用尽（429），稍后再试。';
+      if (err.status === 400) return '请求参数有问题（400），检查模型名是否正确。';
+      if (err.status >= 500) return `DeepSeek 服务端错误（${err.status}），稍后重试。`;
+      return `请求失败（${err.status}）：${String(err.body).slice(0, 160)}`;
+    }
+    if (err instanceof TypeError) {
+      return '网络错误：可能是断网、请求被拦截，或浏览器阻止了跨域请求（CORS）。';
+    }
+    return `出错了：${err.message}`;
+  }
+
+  async function send() {
+    const key = el.apiKey.value.trim();
+    const text = el.input.value.trim();
+    if (!key) {
+      setStatus('请先填入 DeepSeek API key', 'warn');
+      el.apiKey.focus();
+      return;
+    }
+    if (!text || controller) return;
+
+    persistKey(key);
+    el.input.value = '';
+    addMessage('user', text);
+    history.push({ role: 'user', content: text });
+
+    const bubble = addMessage('assistant', '', 'streaming');
+    controller = new AbortController();
+    setStreaming(true);
+
+    let acc = '';
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: el.model.value,
+          messages: history,
+          stream: true,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        throw new ApiError(res.status, await res.text());
+      }
+      if (!res.body) throw new Error('响应没有可读的流');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const raw of lines) {
+          const line = raw.trim();
+          if (!line.startsWith('data:')) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === '[DONE]') continue;
+          try {
+            const json = JSON.parse(payload);
+            const delta = json.choices?.[0]?.delta?.content;
+            if (delta) {
+              acc += delta;
+              bubble.textContent = acc;
+              scrollToBottom();
+            }
+          } catch {
+            /* 忽略无法解析的行 */
+          }
+        }
+      }
+
+      bubble.classList.remove('streaming');
+      if (acc) {
+        history.push({ role: 'assistant', content: acc });
+        setStatus('完成', 'ok');
+      } else {
+        bubble.textContent = '（模型没有返回内容）';
+        bubble.classList.add('error');
+        setStatus('空响应', 'warn');
+      }
+    } catch (err) {
+      bubble.classList.remove('streaming');
+      if (err.name === 'AbortError' && acc) {
+        history.push({ role: 'assistant', content: acc });
+        setStatus('已停止', 'warn');
+      } else {
+        bubble.textContent = describeError(err);
+        bubble.classList.add('error');
+        setStatus('请求失败', 'err');
+      }
+    } finally {
+      controller = null;
+      setStreaming(false);
+      el.input.focus();
+    }
+  }
+
+  function resetChat() {
+    history = [{ role: 'system', content: SYSTEM_PROMPT }];
+    el.messages.innerHTML = '';
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = '对话已清空。';
+    el.messages.appendChild(empty);
+    el.emptyHint = empty;
+    setStatus('已清空对话', 'ok');
+  }
+
+  // ---- 初始化 ----
+  const savedModel = localStorage.getItem(MODEL_STORE);
+  if (savedModel) el.model.value = savedModel;
+  el.remember.checked = localStorage.getItem(REMEMBER_STORE) === '1';
+
+  const savedKey = readKey();
+  if (savedKey) {
+    el.apiKey.value = savedKey;
+    setStatus(localStorage.getItem(KEY_STORE) ? '已加载记住的 key' : '已加载本次会话的 key', 'ok');
+  }
+
+  el.toggleKey.addEventListener('click', () => {
+    const show = el.apiKey.type === 'password';
+    el.apiKey.type = show ? 'text' : 'password';
+    el.toggleKey.textContent = show ? '隐藏' : '显示';
+  });
+
+  el.model.addEventListener('change', () => {
+    localStorage.setItem(MODEL_STORE, el.model.value);
+  });
+
+  el.saveKey.addEventListener('click', () => {
+    const key = el.apiKey.value.trim();
+    if (!key) {
+      setStatus('key 不能为空', 'warn');
+      return;
+    }
+    persistKey(key);
+    setStatus('已保存到本地', 'ok');
+    el.input.focus();
+  });
+
+  el.clearKey.addEventListener('click', forgetKey);
+  el.clearChat.addEventListener('click', resetChat);
+
+  el.stop.addEventListener('click', () => {
+    if (controller) controller.abort();
+  });
+
+  el.form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    send();
+  });
+
+  el.input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      send();
+    }
+  });
+</script>

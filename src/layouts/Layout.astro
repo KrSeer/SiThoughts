@@ -17,12 +17,14 @@ const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
     <title>{title}</title>
+    <slot name="head" />
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href={base}>SiThoughts</a>
       <nav>
         <a href={`${base}hello/`}>Hello</a>
+        <a href={`${base}chat/`}>Chat</a>
       </nav>
     </header>
 
